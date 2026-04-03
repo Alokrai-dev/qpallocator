@@ -20,9 +20,9 @@ export async function register(req: Request, res: Response) {
 // Login API
 export async function login(req: Request, res: Response) {
   try {
-    const { username, password } = req.body;
+    const { username, password, examName } = req.body;
 
-    const result = await loginUser(username, password);
+    const result = await loginUser(username, password, examName);
 
     res.json(result);
   } catch (err: unknown) {

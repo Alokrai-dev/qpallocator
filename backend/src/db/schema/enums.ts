@@ -1,11 +1,11 @@
-import { pgEnum } from 'drizzle-orm/pg-core';
+import { mysqlEnum } from "drizzle-orm/mysql-core";
 
-export const userTypeEnum = pgEnum('user_type', ['admin', 'selector']);
+export const userTypeEnum = mysqlEnum("user_type", [
+  "selector",
+  "admin",
+]);
 
-// Optional TypeScript type (VERY useful)
-export type UserType = 'admin' | 'selector';
-
-export const colourEnum = pgEnum("colour_type", [
+export const colourEnum = mysqlEnum("colour_type", [
   "red",
   "blue",
   "green",
@@ -13,7 +13,7 @@ export const colourEnum = pgEnum("colour_type", [
   "black",
 ]);
 
-export const alphabetEnum = pgEnum("alphabet_type", [
+export const alphabetEnum = mysqlEnum("alphabet_type", [
   "A",
   "B",
   "C",
@@ -21,7 +21,7 @@ export const alphabetEnum = pgEnum("alphabet_type", [
   "E",
 ]);
 
-export const numberEnum = pgEnum("number_type", [
+export const numberEnum = mysqlEnum("number_type", [
   "1",
   "2",
   "3",

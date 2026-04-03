@@ -1,20 +1,29 @@
-import { pgTable, serial, varchar, text, timestamp } from 'drizzle-orm/pg-core';
-import { userTypeEnum } from './enums';
+import {
+  mysqlTable,
+  int,
+  varchar,
+  text,
+  timestamp,
+} from "drizzle-orm/mysql-core";
+import { userTypeEnum } from "./enums";
 
-export const users = pgTable('users', {
-  id: serial('id').primaryKey(),
+export const users = mysqlTable("users", {
+  id: int("id").autoincrement().primaryKey(),
 
-  username: varchar('username', { length: 50 }).notNull().unique(),
+  username: varchar("username", { length: 50 }).notNull().unique(),
 
-  password: text('password').notNull(),
+  password: text("password").notNull(),
 
-  mobileNumber: varchar('mobile_number', { length: 15 }).notNull().unique(),
+  mobileNumber: varchar("mobile_number", { length: 15 })
+    .notNull()
+    .unique(),
 
-  type: userTypeEnum('type').notNull().default('selector'),
+  // ✅ FIXED ENUM USAGE
+  type: userTypeEnum.notNull().default("selector"),
 
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 
-  updatedAt: timestamp('updated_at')
+  updatedAt: timestamp("updated_at")
     .defaultNow()
-    .$onUpdate(() => new Date()),
+    .onUpdateNow(),
 });

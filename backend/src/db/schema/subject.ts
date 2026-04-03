@@ -1,23 +1,22 @@
 import {
-  pgTable,
-  serial,
+  mysqlTable,
+  int,
   varchar,
-  integer,
   timestamp,
   boolean,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/mysql-core";
 import { users } from "./users";
 
-export const subjects = pgTable("subjects", {
-  id: serial("id").primaryKey(),
+export const subjects = mysqlTable("subjects", {
+  id: int("id").autoincrement().primaryKey(),
 
   subjectName: varchar("subject_name", { length: 100 }).notNull(),
 
-  setCount: integer("set_count").notNull(),
+  setCount: int("set_count").notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 
-  createdBy: integer("created_by")
+  createdBy: int("created_by")
     .references(() => users.id)
     .notNull(),
 

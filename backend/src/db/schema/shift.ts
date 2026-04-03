@@ -1,17 +1,16 @@
 import {
-  pgTable,
-  serial,
+  mysqlTable,
+  int,
   date,
   time,
-  integer,
   timestamp,
   boolean,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/mysql-core";
 import { exams } from "./exam";
 import { users } from "./users";
 
-export const shifts = pgTable("shifts", {
-  id: serial("id").primaryKey(),
+export const shifts = mysqlTable("shifts", {
+  id: int("id").autoincrement().primaryKey(),
 
   date: date("date").notNull(),
 
@@ -19,13 +18,13 @@ export const shifts = pgTable("shifts", {
 
   endTime: time("end_time").notNull(),
 
-  examId: integer("exam_id")
+  examId: int("exam_id")
     .references(() => exams.id)
     .notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 
-  createdBy: integer("created_by")
+  createdBy: int("created_by")
     .references(() => users.id)
     .notNull(),
 

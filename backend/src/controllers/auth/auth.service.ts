@@ -16,21 +16,24 @@ export async function registerUser(data: {
   // hash password
   const hashedPassword = await bcrypt.hash(data.password, 10);
 
-  const user = await db
+  await db
     .insert(users)
     .values({
       username: data.username,
       password: hashedPassword,
       mobileNumber: data.mobileNumber,
       type: data.type ?? 'selector',
-    })
-    .returning();
+    });
 
-  return user[0];
+  const user = await db.query.users.findFirst({
+    where: eq(users.username, data.username),
+  });
+
+  return user;
 }
 
 // 🔑 Login
-export async function loginUser(username: string, password: string) {
+export async function loginUser(username: string, password: string, examName?: string) {
   const user = await db.query.users.findFirst({
     where: eq(users.username, username),
   });
@@ -45,11 +48,19 @@ export async function loginUser(username: string, password: string) {
     throw new Error('Invalid password');
   }
 
+  if (user.type === 'selector') {
+    if (!examName) {
+      throw new Error('An examination must be selected to continue');
+    }
+    // We could validate examName against the exams table here as well
+  }
+
   // create JWT
   const token = jwt.sign(
     {
       id: user.id,
       type: user.type, // admin / selector
+      examName: user.type === 'selector' ? examName : undefined,
     },
     JWT_SECRET,
     { expiresIn: '1d' },
@@ -61,6 +72,7 @@ export async function loginUser(username: string, password: string) {
       id: user.id,
       username: user.username,
       type: user.type,
+      examName: user.type === 'selector' ? examName : undefined,
     },
   };
 }

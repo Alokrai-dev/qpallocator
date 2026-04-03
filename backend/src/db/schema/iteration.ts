@@ -1,31 +1,30 @@
 import {
-  pgTable,
-  serial,
-  integer,
+  mysqlTable,
+  int,
   timestamp,
   boolean,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/mysql-core";
 import { shiftSubjects } from "./shiftSubject";
 import { users } from "./users";
 
-export const iterations = pgTable("iterations", {
-  id: serial("id").primaryKey(),
+export const iterations = mysqlTable("iterations", {
+  id: int("id").autoincrement().primaryKey(),
 
-  ssId: integer("ss_id")
-    .references(() => shiftSubjects.ssId)
-    .notNull(),
+  ssId: int("ss_id")
+    .notNull()
+    .references(() => shiftSubjects.ssId),
 
   ts: timestamp("ts").defaultNow().notNull(),
 
-  iterationCount: integer("iteration_count").notNull(),
+  iterationCount: int("iteration_count").notNull(),
 
-  selectedSet: integer("selected_set"),
+  selectedSet: int("selected_set"),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 
-  createdBy: integer("created_by")
-    .references(() => users.id)
-    .notNull(),
+  createdBy: int("created_by")
+    .notNull()
+    .references(() => users.id),
 
   isDeleted: boolean("is_deleted").default(false).notNull(),
 });
