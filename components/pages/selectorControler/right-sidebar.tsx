@@ -1,103 +1,139 @@
-import React from 'react'
-import { CheckCircle, Eye, Lock, Zap } from 'lucide-react'
+"use client"
+import React, { useState, useEffect } from 'react'
+import { CheckCircle, Eye, Lock, Zap, Shield, History, Info } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+
+interface HistoryItem {
+  id: number;
+  iterationCount: number;
+  selectedSet: number;
+  ts: string;
+  subjectName: string;
+  shiftStartTime: string;
+}
 
 export default function RightSidebar() {
+  const { user, loading } = useAuth();
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+
+  useEffect(() => {
+    fetchHistory();
+    // Poll for updates every 10 seconds or use a socket for a real implementation
+    const interval = setInterval(fetchHistory, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchHistory = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/allocations/history', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await response.json();
+      setHistory(data.history || []);
+    } catch (err) {
+      console.error("Failed to fetch history", err);
+    }
+  };
+
+  const getSetColor = (setNum: number) => {
+    const colors = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Teal', 'Pink', 'Amber', 'Indigo'];
+    return colors[(setNum - 1) % colors.length];
+  };
+
+  if (loading || !user) return <div className="w-80 bg-white border-l border-slate-100 flex flex-col animate-pulse p-6 gap-6">
+    <div className="h-32 bg-slate-50 rounded-2xl"></div>
+    <div className="h-64 bg-slate-50 rounded-2xl"></div>
+  </div>;
+
   return (
-    <div className="w-80 bg-white border-l border-slate-180 flex flex-col overflow-y-auto">
+    <div className="w-80 bg-white border-l border-slate-100 flex flex-col">
+      {/* Auth Status Section */}
+      <div className="p-6">
+        <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-6 group hover:shadow-md transition-all">
+          <p className="text-[10px] font-black tracking-[0.2em] text-slate-400 mb-5 uppercase">Auth Status</p>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">Selector ID</span>
+              <span className="bg-[#0b1628] text-white px-2.5 py-1 rounded-md text-[10px] font-black tracking-widest border border-slate-800">
+                #S-{user.id.toString().padStart(4, '0')}-AX
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">IP Address</span>
+              <span className="text-[11px] font-black text-[#0b1628] font-mono">192.168.1.104</span>
+            </div>
 
-
-      {/* Content */}
-      <div className="p-2">
-
-        {/* Card */}
-        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl p-6 ">
-
-          {/* Title */}
-          <p className="text-gray-400 text-sm font-semibold tracking-wide mb-4">
-            AUTH STATUS
-          </p>
-
-          {/* Selector ID */}
-          <div className="flex justify-between mb-2 text-sm">
-            <span className="text-gray-600 font-medium">Selector ID</span>
-            <span className="bg-gray-200 px-2 py-1 rounded text-gray-800 font-semibold">
-              #S-7729-AX
-            </span>
-          </div>
-
-          {/* IP Address */}
-          <div className="flex justify-between mb-4 text-sm">
-            <span className="text-gray-600 font-medium">IP Address</span>
-            <span className="text-gray-800 font-semibold">
-              192.168.1.104
-            </span>
-          </div>
-
-          {/* Status */}
-          <div className="flex items-center gap-2 text-green-600 font-semibold text-sm">
-            <Lock size={16} />
-            <span>FULL CLEARANCE GRANTED</span>
+            <div className="pt-2 border-t border-slate-50">
+              <div className="flex items-center gap-2 text-emerald-600 font-black text-[10px] uppercase tracking-widest leading-none">
+                <Shield size={14} className="animate-pulse" />
+                <span>Full Clearance Granted</span>
+              </div>
+            </div>
           </div>
         </div>
-
       </div>
 
+      {/* Completed Allocations Section */}
+      <div className="px-6 pb-6 flex flex-col">
+        <div className="bg-[#0b1628] rounded-[32px] p-6 flex flex-col shadow-xl shadow-slate-900/20 relative overflow-hidden">
+          {/* Subtle pattern overlay */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+          
+          <div className="flex items-center gap-3 mb-6 relative z-10">
+            <div className="p-2 bg-emerald-500/10 rounded-xl">
+              <CheckCircle size={18} className="text-emerald-400" />
+            </div>
+            <h3 className="text-sm font-black text-white uppercase tracking-widest">Completed Allocations</h3>
+          </div>
 
-      {/* Completed Allocations Card */}
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-6 rounded-2xl m-4 flex-1">
-        <div className="flex items-center gap-2 mb-6">
-          <CheckCircle size={20} className="text-teal-400" />
-          <h3 className="text-lg font-bold">Completed Allocations</h3>
+          <div className="space-y-3 flex-1 pr-1 custom-scrollbar relative z-10">
+            {history.length === 0 ? (
+              <div className="py-10 text-center">
+                <History size={32} className="text-slate-700 mx-auto mb-3 opacity-20" />
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">No recent protocols</p>
+              </div>
+            ) : (
+              history.map((item) => (
+                <div key={item.id} className="bg-white/5 border border-white/5 rounded-2xl p-4 hover:bg-white/10 hover:border-white/10 transition-all group">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">
+                      {item.shiftStartTime.substring(0, 5)} Shift
+                    </p>
+                    <div className="flex items-center gap-1 bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-400 text-[8px] font-black uppercase tracking-tighter">
+                      <Lock size={8} />
+                      Verified
+                    </div>
+                  </div>
+                  <h4 className="text-xs font-bold text-white mb-2 leading-tight group-hover:text-emerald-300 transition-colors">{item.subjectName}</h4>
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    Set <span className="text-white font-bold">{getSetColor(item.selectedSet)}</span> Allocated
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+
+          <button className="w-full mt-6 bg-white/10 hover:bg-white/20 text-white font-black py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all text-[10px] uppercase tracking-[0.2em] border border-white/5 relative z-10">
+            <Eye size={14} />
+            View Full Audit Log
+          </button>
         </div>
-
-        <div className="space-y-4">
-          {/* Morning Shift */}
-          <div className="bg-slate-700 bg-opacity-50 rounded-lg p-4">
-            <p className="text-xs uppercase tracking-wide font-semibold text-slate-300 mb-2">Morning Shift</p>
-            <h4 className="font-semibold text-white mb-2">Anatomy & Physiology</h4>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-400">Set Red Allocated</span>
-              <span className="bg-teal-600 text-teal-100 px-2 py-1 rounded text-xs font-semibold">VERIFIED</span>
-            </div>
-          </div>
-
-          {/* Noon Shift */}
-          <div className="bg-slate-700 bg-opacity-50 rounded-lg p-4">
-            <p className="text-xs uppercase tracking-wide font-semibold text-slate-300 mb-2">Noon Shift</p>
-            <h4 className="font-semibold text-white mb-2">Biochemistry & Genetics</h4>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-400">Set Yellow Allocated</span>
-              <span className="bg-teal-600 text-teal-100 px-2 py-1 rounded text-xs font-semibold">VERIFIED</span>
-            </div>
-          </div>
-
-          {/* Evening Shift */}
-          <div className="bg-slate-700 bg-opacity-50 rounded-lg p-4">
-            <p className="text-xs uppercase tracking-wide font-semibold text-slate-300 mb-2">Evening Shift</p>
-            <h4 className="font-semibold text-white mb-2">Medical Ethics</h4>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-400">Set Orange Allocated</span>
-              <span className="bg-teal-600 text-teal-100 px-2 py-1 rounded text-xs font-semibold">VERIFIED</span>
-            </div>
-          </div>
-        </div>
-
-        <button className="w-full mt-6 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 rounded-lg flex items-center justify-center gap-2 transition text-sm">
-          <Eye size={16} />
-          VIEW FULL AUDIT LOG
-        </button>
       </div>
 
-      {/* Protocol Note Card */}
-      <div className="p-4 mx-4 mb-4">
-        <div className="bg-gradient-to-br from-slate-700 to-slate-800 rounded-lg p-4 text-white">
-          <img
-            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'%3E%3Crect fill='%231a2942' width='400' height='200'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%2310b981' opacity='0.6'/%3E%3Ccircle cx='350' cy='150' r='2' fill='%2310b981' opacity='0.4'/%3E%3Cline x1='50' y1='50' x2='100' y2='80' stroke='%2310b981' stroke-width='0.5' opacity='0.3'/%3E%3Cline x1='100' y1='80' x2='150' y2='60' stroke='%2310b981' stroke-width='0.5' opacity='0.3'/%3E%3Cline x1='150' y1='60' x2='200' y2='100' stroke='%2310b981' stroke-width='0.5' opacity='0.3'/%3E%3Cline x1='200' y1='100' x2='250' y2='70' stroke='%2310b981' stroke-width='0.5' opacity='0.3'/%3E%3C/svg%3E"
-            alt="Network visualization"
-            className="w-full h-24 rounded mb-3 object-cover"
-          />
-          <h4 className="font-semibold text-sm mb-2">Protocol Note</h4>
-          <p className="text-xs text-slate-300 leading-relaxed">The randomization engine uses a quantum-resistant seed generator. Ensure all selection parameters are verified before clicking the allocation trigger.</p>
+      {/* Protocol Note Section */}
+      <div className="px-6 pb-6">
+        <div className="bg-slate-50 rounded-[24px] p-5 border border-slate-100 flex items-start gap-4">
+          <div className="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl mt-1">
+            <Info size={16} />
+          </div>
+          <div>
+            <h4 className="text-[11px] font-black text-[#0b1628] uppercase tracking-widest mb-1.5">Protocol Note</h4>
+            <p className="text-[10px] text-slate-500 font-bold leading-relaxed">
+              The randomization engine uses a quantum-resistant seed generator. Ensure all selection parameters are verified before clicking the allocation trigger.
+            </p>
+          </div>
         </div>
       </div>
     </div>

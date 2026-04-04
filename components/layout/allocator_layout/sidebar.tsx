@@ -1,43 +1,48 @@
 import React from 'react'
 import { LayoutGrid, Settings, LogOut, Menu, Bell, Search, User, LogIn, AlertTriangle, CheckSquare, Shield } from 'lucide-react'
 import Link from 'next/link'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function Sidebar() {
+  const { logout } = useAuth();
+
   return (
     <div className="w-48 bg-gradient-to-b from-slate-900 to-slate-800 text-white h-screen flex flex-col">
       {/* Logo Section */}
       <div className="p-6 border-b border-slate-700">
-        <h1 className="text-lg font-bold">Exam Curator</h1>
-        <p className="text-xs text-slate-400 mt-1">ENTERPRISE ADMIN</p>
+        <h1 className="text-lg font-black tracking-tight text-white uppercase">ExamCore</h1>
+        <p className="text-[10px] font-bold text-teal-400 mt-1 uppercase tracking-widest">Enterprise v4.0</p>
       </div>
 
       {/* Navigation Menu */}
       <nav className="flex-1 overflow-y-auto py-6 px-4">
         <div className="space-y-2">
           {/* Dashboard */}
-          <Link href="/randomization_in_progress" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-200 hover:bg-slate-700 cursor-pointer transition">
-            <LayoutGrid size={18} />
-            <span className="text-sm">Randomization In Progress</span>
+          <Link href="/randomization_in_progress" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-200 hover:bg-white/5 hover:text-white cursor-pointer transition group">
+            <LayoutGrid size={18} className="group-hover:scale-110 transition-transform" />
+            <span className="text-sm font-medium">Randomization</span>
           </Link>
 
 
           {/* Selector Controls - Active */}
-          <Link href="/selectorControl" className="flex items-center gap-3 px-4 py-3 rounded-lg bg-teal-600 text-white cursor-pointer transition">
-            <LayoutGrid size={18} />
-            <span className="text-sm">Selector Controls</span>
+          <Link href="/selectorControl" className="flex items-center gap-3 px-4 py-3 rounded-lg bg-teal-600/90 text-white shadow-lg shadow-teal-900/40 cursor-pointer transition group">
+            <Shield size={18} className="group-hover:scale-110 transition-transform" />
+            <span className="text-sm font-bold">Allocations</span>
           </Link>
 
         </div>
       </nav>
 
       {/* Bottom Navigation */}
-      <div className="border-t border-slate-700 p-4 space-y-2">
-
+      <div className="border-t border-slate-700/50 p-4 space-y-2">
         {/* Logout */}
-        <div className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-200 hover:bg-slate-700 cursor-pointer transition">
-          <LogOut size={18} />
-          <span className="text-sm">Logout</span>
-        </div>
+        <button 
+          onClick={logout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 cursor-pointer transition group border border-transparent hover:border-red-500/20"
+        >
+          <LogOut size={18} className="group-hover:-translate-x-0.5 transition-transform" />
+          <span className="text-sm font-bold">Logout</span>
+        </button>
       </div>
     </div>
   )

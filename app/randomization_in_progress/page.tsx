@@ -16,32 +16,59 @@ import {
   Stethoscope,
   ChevronRight,
   User,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function RandomizationInProgress() {
+  const { user, loading, logout } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-medium animate-pulse text-sm tracking-widest uppercase">Initializing Secure Session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If not logged in, the hook handles redirection or we can show a fallback
+  if (!user) return null;
+
   return (
     <div className="bg-surface overflow-y-auto text-on-surface min-h-screen flex flex-col">
 
-      <header className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md text-primary dark:text-slate-100 font-manrope headline-md tracking-tight  top-0 z-50 border-b border-slate-200/15 shadow-sm flex justify-between items-center w-291 px-8 py-3 fixed">
+      <header className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md text-primary dark:text-slate-100 font-manrope headline-md tracking-tight  top-0 z-50 border-b border-slate-200/15 shadow-sm flex justify-between items-center w-full px-8 py-3 fixed">
         <div className="flex items-center gap-6">
           <span className="text-xl font-black text-[#002045] dark:text-white uppercase tracking-tight">ExamCore Sentinel</span>
           <div className="h-6 w-px bg-slate-200 mx-2"></div>
           <div className="flex items-center gap-2 px-3 py-1 bg-tertiary-container/10 rounded-full">
             <span className="material-symbols-outlined text-on-tertiary-container text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
-            <span className="text-[10px] font-bold text-on-tertiary-container uppercase tracking-wider">Selector_Alpha_01</span>
+            <span className="text-[10px] font-bold text-on-tertiary-container uppercase tracking-wider">{user.username}</span>
           </div>
         </div>
         <div className="flex items-center gap-6">
-
           {/* User Profile */}
-          <div className="flex items-center gap-2 pl-6 border-l border-slate-200">
+          <div className="flex items-center gap-4 pl-6 border-l border-slate-200">
             <div className="text-right">
-              <p className="text-xs font-semibold text-slate-900">Selector_Alpha_01</p>
-              <p className="text-xs text-teal-600">Session Authorized</p>
+              <p className="text-xs font-semibold text-slate-900">{user.username}</p>
+              <p className="text-[10px] text-teal-600 font-bold uppercase tracking-tight">
+                {user.type === 'admin' ? 'Root Administrator' : 'Authorized Selector'}
+              </p>
             </div>
-            <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-semibold">
-              <User size={20} />
+            <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-bold">
+              {user.username.charAt(0).toUpperCase()}
             </div>
+            
+            <button 
+              onClick={logout}
+              className="p-2.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all group"
+              title="Terminate Secure Session"
+            >
+              <LogOut size={18} className="group-hover:scale-110 transition-transform" />
+            </button>
           </div>
         </div>
       </header >
@@ -56,7 +83,9 @@ export default function RandomizationInProgress() {
                 <span className="material-symbols-outlined text-[12px]">chevron_right</span>
                 <span className="text-primary">Real-time Entropy Engine</span>
               </nav>
-              <h1 className="text-4xl font-extrabold text-primary mb-2 tracking-tight">Spring 2024 - National Medical Entrance</h1>
+              <h1 className="text-4xl font-extrabold text-primary mb-2 tracking-tight">
+                {user.examName || "Spring 2024 - National Medical Entrance"}
+              </h1>
               <div className="flex items-center gap-6 text-on-surface-variant">
                 <div className="flex items-center gap-2"><BookOpen />
                   <span className="font-medium text-on-surface">Subject: <span className="font-bold">Anatomy &amp; Physiology</span></span>

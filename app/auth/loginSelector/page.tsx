@@ -27,7 +27,7 @@ export default function LoginPage() {
       .then((res) => res.json())
       .then((data) => setExaminations(data.exams || []))
       .catch((err) => console.error(err));
-  }, []);
+  });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,8 +152,8 @@ export default function LoginPage() {
                   </label>
                   <div
                     className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border bg-slate-50 transition-all ${focused === "username"
-                        ? "border-emerald-400 ring-2 ring-emerald-400/20 bg-white"
-                        : "border-slate-200"
+                      ? "border-emerald-400 ring-2 ring-emerald-400/20 bg-white"
+                      : "border-slate-200"
                       }`}
                   >
                     <User
@@ -186,8 +186,8 @@ export default function LoginPage() {
                   </div>
                   <div
                     className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border bg-slate-50 transition-all ${focused === "password"
-                        ? "border-emerald-400 ring-2 ring-emerald-400/20 bg-white"
-                        : "border-slate-200"
+                      ? "border-emerald-400 ring-2 ring-emerald-400/20 bg-white"
+                      : "border-slate-200"
                       }`}
                   >
                     <Lock

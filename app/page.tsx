@@ -1,10 +1,5 @@
-import React from 'react'
-import Home from '@/components/layout/allocator_layout/index'
+import { redirect } from 'next/navigation'
 
-function page() {
-  return (
-    <h1>Home</h1>
-  )
+export default function Page() {
+  redirect('/auth/loginSelector')
 }
-
-export default page
