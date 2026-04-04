@@ -12,7 +12,12 @@ interface HistoryItem {
   shiftStartTime: string;
 }
 
-export default function RightSidebar() {
+interface RightSidebarProps {
+  activeExamName: string;
+  activeExamId: number | null;
+}
+
+export default function RightSidebar({ activeExamName, activeExamId }: RightSidebarProps) {
   const { user, loading } = useAuth();
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
@@ -47,19 +52,44 @@ export default function RightSidebar() {
 
   return (
     <div className="w-80 bg-white border-l border-slate-100 flex flex-col">
+      {/* Active Session Card */}
+      <div className="p-6 pb-0">
+        <div className="bg-emerald-50 rounded-[28px] p-6 border border-emerald-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 blur-xl"></div>
+
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <p className="text-[10px] font-black tracking-[0.2em] text-emerald-700 uppercase">Live Node Active</p>
+          </div>
+
+          <h3 className="text-sm font-black text-[#0b1628] uppercase tracking-tight leading-tight mb-2">
+            {activeExamName || "No Session Selected"}
+          </h3>
+
+          <div className="flex items-center gap-2">
+            <div className="px-2 py-0.5 bg-white rounded-md border border-emerald-100 text-[10px] font-bold text-emerald-600">
+              ID: {activeExamId || 'N/A'}
+            </div>
+            <div className="text-[10px] font-bold text-slate-400">
+              Protocol v2.4
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Auth Status Section */}
       <div className="p-6">
         <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-6 group hover:shadow-md transition-all">
           <p className="text-[10px] font-black tracking-[0.2em] text-slate-400 mb-5 uppercase">Auth Status</p>
-          
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">Selector ID</span>
               <span className="bg-[#0b1628] text-white px-2.5 py-1 rounded-md text-[10px] font-black tracking-widest border border-slate-800">
-                #S-{user.id.toString().padStart(4, '0')}-AX
+                {user.username}
               </span>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">IP Address</span>
               <span className="text-[11px] font-black text-[#0b1628] font-mono">192.168.1.104</span>
@@ -80,7 +110,7 @@ export default function RightSidebar() {
         <div className="bg-[#0b1628] rounded-[32px] p-6 flex flex-col shadow-xl shadow-slate-900/20 relative overflow-hidden">
           {/* Subtle pattern overlay */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-          
+
           <div className="flex items-center gap-3 mb-6 relative z-10">
             <div className="p-2 bg-emerald-500/10 rounded-xl">
               <CheckCircle size={18} className="text-emerald-400" />

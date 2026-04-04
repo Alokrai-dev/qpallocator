@@ -14,7 +14,17 @@ interface Shift {
   endTime: string;
 }
 
-export default function MainContent() {
+interface MainContentProps {
+  activeExamId: number | null;
+  activeExamName: string;
+  allExams: any[];
+}
+
+export default function MainContent({ 
+  activeExamId, 
+  activeExamName, 
+  allExams
+}: MainContentProps) {
   const { user, loading: authLoading } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -26,17 +36,20 @@ export default function MainContent() {
   const [selectedShift, setSelectedShift] = useState<number | null>(null);
   const [result, setResult] = useState<any>(null);
 
+  // UI state
+
   useEffect(() => {
-    if (user && user.examId) {
+    if (activeExamId) {
       fetchExamData();
     }
-  }, [user]);
+  }, [activeExamId]);
 
   const fetchExamData = async () => {
-    if (!user || !user.examId) return;
+    if (!activeExamId) return;
     
+    setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/allocations/data?examId=${user.examId}`, {
+      const response = await fetch(`http://localhost:3000/api/allocations/data?examId=${activeExamId}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await response.json();
@@ -50,6 +63,7 @@ export default function MainContent() {
       setLoading(false);
     }
   };
+
 
   const handleRandomize = async () => {
     if (!selectedSubject || !selectedShift) return;
@@ -69,8 +83,6 @@ export default function MainContent() {
       });
       const data = await response.json();
       setResult(data);
-      // Trigger a refresh of the history in the sidebar (we might need a global state or event bus for this, 
-      // but for now let's just show the result locally)
     } catch (err) {
       console.error("Randomization failed", err);
     } finally {
@@ -98,10 +110,10 @@ export default function MainContent() {
       {/* Title Section */}
       <div className="mb-10">
         <h1 className="text-[42px] font-black text-[#0b1628] leading-[1.1] tracking-tighter">
-          {user?.examName?.split(' - ')[0] || "Spring 2024"} - 
-          <span className="text-emerald-500"> {user?.examName?.split(' - ')[1] || "National Medical Entrance"}</span>
+          {activeExamName?.split(' - ')[0] || "Spring 2024"} - 
+          <span className="text-emerald-500"> {activeExamName?.split(' - ')[1] || "National Medical Entrance"}</span>
         </h1>
-        <p className="text-slate-400 mt-4 text-sm leading-relaxed max-w-2xl font-medium">Authorized selector terminal for the National Certification Board. Follow the three-step sequence to finalize the paper set randomization process {user?.examName ? `for ${user.examName}` : ""}.</p>
+        <p className="text-slate-400 mt-4 text-sm leading-relaxed max-w-2xl font-medium">Authorized selector terminal for the National Certification Board. Follow the three-step sequence to finalize the paper set randomization process {activeExamName ? `for ${activeExamName}` : ""}.</p>
       </div>
 
       {/* Steps Section */}
@@ -160,18 +172,16 @@ export default function MainContent() {
             <div className="flex-1">
               <h3 className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-400 mb-3">Final Action</h3>
               <button 
-                onClick={handleRandomize}
-                disabled={isRandomizing}
+                onClick={() => {
+                  if (selectedSubject && selectedShift) {
+                    window.location.href = `/randomization_in_progress?subjectId=${selectedSubject}&shiftId=${selectedShift}&examId=${activeExamId}`;
+                  }
+                }}
+                disabled={!selectedSubject || !selectedShift}
                 className="w-full bg-gradient-to-r from-[#0b1628] to-[#1e293b] text-white font-black py-5 rounded-[20px] flex items-center justify-center gap-3 hover:shadow-xl hover:shadow-slate-900/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed group/btn"
               >
-                {isRandomizing ? (
-                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                ) : (
-                  <>
-                    <Zap size={20} className="text-emerald-400 group-hover/btn:scale-125 transition-transform" />
-                    <span className="tracking-widest uppercase text-sm">Randomize and Allocate</span>
-                  </>
-                )}
+                <Zap size={20} className="text-emerald-400 group-hover/btn:scale-125 transition-transform" />
+                <span className="tracking-widest uppercase text-sm">Proceed to Randomization</span>
               </button>
               <div className="flex items-center justify-center gap-2 mt-4">
                 <Shield size={12} className="text-slate-300" />

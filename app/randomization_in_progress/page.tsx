@@ -1,385 +1,409 @@
 "use client";
 
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
-  List,
-  Fingerprint,
-  Clock1,
-  BookOpen,
-  RefreshCw,
+  Shield,
+  Clock,
   Server,
   Key,
   BarChart3,
-  Shield,
-  Clock,
-  Upload,
   StopCircle,
-  Stethoscope,
-  ChevronRight,
-  User,
+  BookOpen,
+  Clock1,
+  Fingerprint,
+  CheckCircle2,
+  AlertCircle,
   LogOut,
+  ChevronRight,
+  Database,
+  Radio,
+  Zap
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function RandomizationInProgress() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading: authLoading, logout } = useAuth();
+  const searchParams = useSearchParams();
+  const subjectId = searchParams.get('subjectId');
+  const shiftId = searchParams.get('shiftId');
+  const examId = searchParams.get('examId');
 
-  if (loading) {
+  const [details, setDetails] = useState<{
+    subjectName: string;
+    shiftName: string;
+    examName: string;
+    noOfIteration: number;
+  }>({
+    subjectName: "Loading Subject...",
+    shiftName: "Loading Shift...",
+    examName: "Loading Exam Data...",
+    noOfIteration: 5
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [completedIterations, setCompletedIterations] = useState<any[]>([]);
+  const [currentStep, setCurrentStep] = useState(1);
+
+  useEffect(() => {
+    if (examId) {
+      fetchDetails();
+    }
+  }, [examId, subjectId, shiftId]);
+
+  const fetchDetails = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/allocations/data?examId=${examId}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await response.json();
+
+      const subject = data.subjects?.find((s: any) => s.id.toString() === subjectId);
+      const shift = data.shifts?.find((s: any) => s.id.toString() === shiftId);
+
+      setDetails({
+        subjectName: subject?.subjectName || "Unknown Subject",
+        shiftName: shift ? `${shift.startTime} - ${shift.endTime}` : "Unknown Shift",
+        examName: data.exam?.examName || "National Medical Entrance",
+        noOfIteration: data.exam?.noOfIteration || 5
+      });
+    } catch (err) {
+      console.error("Failed to fetch details", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startRandomization = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    setCompletedIterations([]);
+
+    // Process iterations in a loop
+    for (let i = 1; i <= details.noOfIteration; i++) {
+      setCurrentStep(i);
+
+      try {
+        // Wait a bit for visual effect
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        const response = await fetch('http://localhost:3000/api/allocations/randomize', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            subjectId: subjectId,
+            shiftId: shiftId,
+            token: localStorage.getItem('token') // Fallback for the middleware update we made
+          })
+        });
+
+        const result = await response.json();
+        setCompletedIterations(prev => [...prev, {
+          id: i.toString().padStart(2, '0'),
+          time: new Date().toLocaleTimeString(),
+          set: `Set ${result.selectedSet.toString().padStart(2, '0')} (${result.selectedSet % 2 === 0 ? 'Teal' : 'Green'})`,
+          raw: result
+        }]);
+
+      } catch (err) {
+        console.error(`Iteration ${i} failed`, err);
+        break;
+      }
+    }
+
+    setIsProcessing(false);
+    setCurrentStep(details.noOfIteration + 1);
+  };
+
+  if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-medium animate-pulse text-sm tracking-widest uppercase">Initializing Secure Session...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-emerald-500/10 border-t-emerald-500 rounded-full animate-spin"></div>
+            <Shield className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-emerald-500 w-6 h-6" />
+          </div>
+          <p className="text-[#0b1628] font-black text-xs uppercase tracking-[0.3em] animate-pulse">Initializing Secure Entropy Engine...</p>
         </div>
       </div>
     );
   }
 
-  // If not logged in, the hook handles redirection or we can show a fallback
-  if (!user) return null;
-
   return (
-    <div className="bg-surface overflow-y-auto text-on-surface min-h-screen flex flex-col">
-
-      <header className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md text-primary dark:text-slate-100 font-manrope headline-md tracking-tight  top-0 z-50 border-b border-slate-200/15 shadow-sm flex justify-between items-center w-full px-8 py-3 fixed">
+    <div className="min-h-screen bg-[#f8fafc] text-[#0b1628] font-sans selection:bg-emerald-100 selection:text-emerald-900">
+      {/* Top Header Bar */}
+      <header className="fixed ml-50 top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 z-50 px-8 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <span className="text-xl font-black text-[#002045] dark:text-white uppercase tracking-tight">ExamCore Sentinel</span>
-          <div className="h-6 w-px bg-slate-200 mx-2"></div>
-          <div className="flex items-center gap-2 px-3 py-1 bg-tertiary-container/10 rounded-full">
-            <span className="material-symbols-outlined text-on-tertiary-container text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
-            <span className="text-[10px] font-bold text-on-tertiary-container uppercase tracking-wider">{user.username}</span>
+          <div className="flex items-center gap-2.5 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
+            <Radio className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-black tracking-widest text-emerald-700 uppercase">Selector_Alpha_01</span>
+          </div>
+          <div className="h-4 w-px bg-slate-200"></div>
+          <nav className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <span>Central Allocation</span>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-emerald-500">Real-time Entropy Engine</span>
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
+
+            <div className="relative">
+              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-white"></div>
+              <Radio className="w-5 h-5 text-slate-300" />
+            </div>
+          </div>
+          <div className="h-8 w-px bg-slate-100"></div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-xs font-black text-[#0b1628] leading-none mb-1">{user?.username || "Administrator Profile"}</p>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Master Key Holder</p>
+            </div>
+            <div className="w-9 h-9 bg-slate-100 rounded-full border border-slate-200 flex items-center justify-center text-[#0b1628] font-black text-sm overflow-hidden">
+              {user?.username?.charAt(0).toUpperCase() || "A"}
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-6">
-          {/* User Profile */}
-          <div className="flex items-center gap-4 pl-6 border-l border-slate-200">
-            <div className="text-right">
-              <p className="text-xs font-semibold text-slate-900">{user.username}</p>
-              <p className="text-[10px] text-teal-600 font-bold uppercase tracking-tight">
-                {user.type === 'admin' ? 'Root Administrator' : 'Authorized Selector'}
-              </p>
+      </header>
+
+      <main className="pt-32 pb-20 px-12 max-w-[1400px] mx-auto">
+        {/* Page Title Section */}
+        <div className="flex justify-between items-end mb-12">
+          <div className="max-w-2xl">
+            <h1 className="text-[48px] font-black text-[#0b1628] leading-[1.1] tracking-tight mb-4">
+              {details.examName.split(' - ')[0]} -
+              <span className="text-emerald-500 opacity-90 block lg:inline ml-0 lg:ml-3">
+                {details.examName.split(' - ')[1]}
+              </span>
+            </h1>
+            <div className="flex items-center gap-10">
+              <div className="flex items-center gap-3 text-slate-500">
+                <div className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-50">
+                  <BookOpen size={18} className="text-[#0b1628]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Subject Domain</span>
+                  <span className="text-sm font-black text-[#0b1628]">{details.subjectName}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-slate-500">
+                <div className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-50">
+                  <Clock1 size={18} className="text-[#0b1628]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Examination Shift</span>
+                  <span className="text-sm font-black text-[#0b1628]">Shift: {details.shiftName}</span>
+                </div>
+              </div>
             </div>
-            <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-bold">
-              {user.username.charAt(0).toUpperCase()}
-            </div>
-            
-            <button 
-              onClick={logout}
-              className="p-2.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all group"
-              title="Terminate Secure Session"
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button
+              disabled={isProcessing || completedIterations.length < details.noOfIteration}
+              className="px-8 py-4 bg-emerald-500 disabled:bg-slate-50 border border-emerald-400 disabled:border-slate-100 rounded-2xl flex items-center gap-3 text-white disabled:text-slate-300 font-black uppercase tracking-widest text-[11px] group shadow-lg shadow-emerald-500/20 disabled:shadow-none transition-all active:scale-95"
             >
-              <LogOut size={18} className="group-hover:scale-110 transition-transform" />
+              <Zap size={16} />
+              Accept & Publish Result
+            </button>
+            <button
+              onClick={isProcessing ? () => window.location.href = '/selectorControl' : startRandomization}
+              className={`px-8 py-4 border rounded-2xl shadow-sm transition-all flex items-center gap-3 font-black uppercase tracking-widest text-[11px] group active:scale-95 ${isProcessing
+                ? 'bg-white border-red-100 text-red-500 hover:bg-red-50'
+                : 'bg-[#0b1628] border-[#0b1628] text-white hover:bg-slate-800'
+                }`}
+            >
+              <div className={`w-2.5 h-2.5 rounded-full ${isProcessing ? 'bg-red-500 animate-pulse' : 'bg-emerald-400'}`}></div>
+              {isProcessing ? 'Stop Process' : 'Start Allocation'}
             </button>
           </div>
         </div>
-      </header >
-      <div className="flex flex-1 overflow-y-auto mt-20 mb-15">
-        {/* <!-- Main Content Area --> */}
-        <main className="flex-1 p-8 bg-surface">
-          {/* <!-- Header Section --> */}
-          <div className="mb-12 flex justify-between items-end">
-            <div>
-              <nav className="flex items-center gap-2 text-xs font-bold text-on-surface-variant uppercase tracking-[0.2em] mb-4">
-                <span>Central Allocation</span>
-                <span className="material-symbols-outlined text-[12px]">chevron_right</span>
-                <span className="text-primary">Real-time Entropy Engine</span>
-              </nav>
-              <h1 className="text-4xl font-extrabold text-primary mb-2 tracking-tight">
-                {user.examName || "Spring 2024 - National Medical Entrance"}
-              </h1>
-              <div className="flex items-center gap-6 text-on-surface-variant">
-                <div className="flex items-center gap-2"><BookOpen />
-                  <span className="font-medium text-on-surface">Subject: <span className="font-bold">Anatomy &amp; Physiology</span></span>
-                </div>
-                <div className="h-4 w-px bg-outline-variant/30"></div>
-                <div className="flex items-center gap-2"><Clock1 />
 
-                  <span className="font-medium text-on-surface">Shift: <span className="font-bold">Morning (09:00 - 12:00)</span></span>
+        <div className="grid grid-cols-12 gap-10">
+          {/* Left Column: Iterations Timeline */}
+          <div className="col-span-12 lg:col-span-8">
+            <div className="bg-white rounded-[40px] p-10 border border-slate-100 shadow-sm relative overflow-hidden min-h-[600px]">
+              <div className="flex items-center justify-between mb-12">
+                <div className="flex items-center gap-3">
+                  <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
+                  <h3 className="text-xl font-black text-[#0b1628] tracking-tight">Randomization Iterations</h3>
+                </div>
+                <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+                  <Shield size={12} className="text-emerald-600" />
+                  <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest">Secured Layer Active</span>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <button className="bg-slate-100 text-slate-400 cursor-not-allowed px-6 py-3 rounded-xl font-bold flex items-center gap-2 border border-slate-200 opacity-60">
-                <span>Accept &amp; Publish Result</span>
-              </button>
-              <button className="bg-white border border-error/20 text-red-500 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-error-container/20 transition-all shadow-sm active:scale-95">
-                <StopCircle />  <span> Stop Process</span>
-              </button>
-            </div>
-          </div>
-          {/* <!-- Dashboard Grid --> */}
-          <div className="grid grid-cols-12 gap-8">
-            {/* <!-- Left: Status Monitor --> */}
-            <div className="col-span-12 lg:col-span-8">
-              <div className="bg-white rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
-                <div className="px-8 py-6 flex justify-between items-center border-b border-outline-variant/10">
-                  <h3 className="headline-font text-xl font-bold text-primary flex items-center gap-3">
-                    <span className="material-symbols-outlined text-primary">reorder</span>
-                    Randomization Iterations
-                  </h3>
-                  <span className="text-[10px] font-bold px-3 py-1 bg-tertiary-container/10 text-on-tertiary-container rounded-full uppercase tracking-widest flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
-                    Secured Layer active
-                  </span>
-                </div>
-                <div className="p-8">
-                  <div className="space-y-6 relative">
-                    {/* <!-- Iteration 01 --> */}
-                    <div className="relative flex items-center gap-6 progress-line-active">
-                      <div className="w-12 h-12 flex items-center justify-center bg-primary text-white font-bold rounded-full z-10 shadow-md">
-                        01
+
+              <div className="space-y-6 relative">
+                {/* Timeline Background Line */}
+                <div className="absolute left-[31px] top-6 bottom-6 w-[2px] bg-slate-50"></div>
+
+                {/* Dynamic Iterations Mapping */}
+                {Array.from({ length: details.noOfIteration }).map((_, idx) => {
+                  const stepNum = idx + 1;
+                  const iteration = completedIterations.find(it => parseInt(it.id) === stepNum);
+                  const isProcessingThis = isProcessing && currentStep === stepNum;
+                  const isPending = !iteration && !isProcessingThis;
+
+                  return (
+                    <div key={stepNum} className={`relative flex items-center gap-8 pl-1 transition-all duration-500 ${isPending ? 'opacity-20' : 'opacity-100'}`}>
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg z-10 transition-colors ${iteration ? 'bg-[#0b1628]' : isProcessingThis ? 'bg-[#0b1628] ring-4 ring-emerald-500/20' : 'bg-slate-100 text-slate-400 shadow-none'}`}>
+                        {isProcessingThis ? (
+                          <div className="relative">
+                            <Radio size={24} className="animate-spin duration-[3000ms] text-emerald-400" />
+                            <div className="absolute inset-0 flex items-center justify-center text-[10px]">{stepNum.toString().padStart(2, '0')}</div>
+                          </div>
+                        ) : stepNum.toString().padStart(2, '0')}
                       </div>
-                      <div className="flex-1 flex items-center justify-between p-5 rounded-xl bg-surface-container-low border border-outline-variant/10">
-                        <div>
-                          <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Iteration Completed</p>
-                          <div className="flex items-center gap-3 text-[10px] text-on-surface-variant font-medium">
-                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-xs">schedule</span> 10:15:22 AM</span>
-                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-xs">fingerprint</span> SHA-256 Verified</span>
+
+                      {iteration ? (
+                        <div className="flex-1 bg-[#f8fafc]/50 rounded-3xl p-6 border border-slate-50 flex items-center justify-between group hover:bg-white hover:shadow-xl hover:shadow-slate-500/5 transition-all">
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Iteration Completed</p>
+                            <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500">
+                              <span className="flex items-center gap-1.5"><Clock size={12} /> {iteration.time}</span>
+                              <span className="flex items-center gap-1.5"><Fingerprint size={12} /> SHA-256 Verified</span>
+                            </div>
+                          </div>
+                          <div className={`px-4 py-2 rounded-xl flex items-center gap-2 border ${iteration.set.includes('Teal') ? 'bg-teal-50 border-teal-100 text-teal-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full ${iteration.set.includes('Teal') ? 'bg-teal-500' : 'bg-emerald-500'}`}></div>
+                            <span className="text-[10px] font-black uppercase">{iteration.set}</span>
                           </div>
                         </div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#68dba9]/10 text-on-tertiary-container rounded-lg font-bold text-xs border border-[#68dba9]/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#68dba9]"></span>
-                          Set 03 (Green)
-                        </div>
-                      </div>
-                    </div>
-                    {/* <!-- Iteration 02 --> */}
-                    <div className="relative flex items-center gap-6 progress-line-active">
-                      <div className="w-12 h-12 flex items-center justify-center bg-primary text-white font-bold rounded-full z-10 shadow-md">
-                        02
-                      </div>
-                      <div className="flex-1 flex items-center justify-between p-5 rounded-xl bg-surface-container-low border border-outline-variant/10">
-                        <div>
-                          <p className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Iteration Completed</p>
-                          <div className="flex items-center gap-3 text-[10px] text-on-surface-variant font-medium">
-                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-xs">schedule</span> 10:15:25 AM</span>
-                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-xs">fingerprint</span> SHA-256 Verified</span>
+                      ) : isProcessingThis ? (
+                        <div className="flex-1 bg-[#0b1628] rounded-3xl p-8 shadow-2xl shadow-slate-900/40 relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-16 -mt-16 blur-2xl animate-pulse"></div>
+                          <div className="flex items-center justify-between relative z-10">
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <p className="text-[10px] font-black text-white uppercase tracking-[0.3em]">In Progress</p>
+                                <div className="flex gap-1">
+                                  <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:0s]"></span>
+                                  <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                                  <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                                </div>
+                              </div>
+                              <p className="text-[11px] font-bold text-slate-400">Running Entropy Matrix Expansion...</p>
+                            </div>
+                            <div className="text-[11px] font-black text-emerald-400 italic tracking-widest uppercase">Calculating...</div>
                           </div>
                         </div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-teal-500/10 text-teal-700 rounded-lg font-bold text-xs border border-teal-500/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
-                          Set 07 (Teal)
+                      ) : (
+                        <div className="flex-1 bg-white border-2 border-dashed border-slate-100 rounded-3xl p-6 flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Pending Iteration</p>
+                            <p className="text-[9px] font-bold text-slate-300 italic">Waiting for prior cycle completion</p>
+                          </div>
+                          <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">TBD</div>
                         </div>
-                      </div>
+                      )}
                     </div>
-                    {/* <!-- Iteration 03 - In Progress --> */}
-                    <div className="relative flex items-center gap-6">
-                      <div className="w-12 h-12 flex items-center justify-center bg-primary text-white font-bold rounded-full z-10 shadow-md spin-slow ring-4 ring-primary-container/20">
-                        <span className="material-symbols-outlined text-xl">sync</span>
-                      </div>
-                      <div className="flex-1 flex items-center justify-between p-5 rounded-xl bg-primary-container text-white shadow-lg ring-1 ring-primary/10">
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-2">
-                            In Progress
-                            <span className="flex gap-0.5">
-                              <span className="w-1 h-1 bg-white rounded-full animate-bounce"></span>
-                              <span className="w-1 h-1 bg-white rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                              <span className="w-1 h-1 bg-white rounded-full animate-bounce [animation-delay:0.4s]"></span>
-                            </span>
-                          </p>
-                          <p className="text-[10px] text-slate-300 font-medium">Running Entropy Matrix Expansion...</p>
-                        </div>
-                        <div className="px-3 py-1.5 bg-white/10 rounded-lg font-bold text-xs italic">
-                          Calculating...
-                        </div>
-                      </div>
-                    </div>
-                    {/* <!-- Iteration 04 - Pending --> */}
-                    <div className="relative flex items-center gap-6 opacity-40">
-                      <div className="w-12 h-12 flex items-center justify-center bg-surface-container-highest text-on-surface-variant font-bold rounded-full z-10">
-                        04
-                      </div>
-                      <div className="flex-1 flex items-center justify-between p-5 rounded-xl border border-dashed border-outline-variant">
-                        <div>
-                          <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Pending Iteration</p>
-                          <p className="text-[10px] text-on-surface-variant/60 font-medium italic">Waiting for prior cycle completion</p>
-                        </div>
-                        <div className="px-3 py-1.5 bg-outline-variant/10 text-on-surface-variant rounded-lg font-bold text-xs uppercase">
-                          TBD
-                        </div>
-                      </div>
-                    </div>
-                    {/* <!-- Iteration 05 - Pending --> */}
-                    <div className="relative flex items-center gap-6 opacity-40">
-                      <div className="w-12 h-12 flex items-center justify-center bg-surface-container-highest text-on-surface-variant font-bold rounded-full z-10">
-                        05
-                      </div>
-                      <div className="flex-1 flex items-center justify-between p-5 rounded-xl border border-dashed border-outline-variant">
-                        <div>
-                          <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Pending Iteration</p>
-                          <p className="text-[10px] text-on-surface-variant/60 font-medium italic">Waiting for prior cycle completion</p>
-                        </div>
-                        <div className="px-3 py-1.5 bg-outline-variant/10 text-on-surface-variant rounded-lg font-bold text-xs uppercase">
-                          TBD
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* <!-- Right: Meta Data & Health --> */}
-            <div className="col-span-12 lg:col-span-4 space-y-6">
-              {/* <!-- Security Metric Card --> */}
-              <div className="bg-primary text-white p-8 rounded-2xl shadow-xl relative overflow-hidden">
-                <div className="relative z-10">
-                  <h4 className="text-xs font-bold uppercase tracking-[0.3em] text-on-primary-container mb-6">Security Integrity</h4>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-5xl font-black headline-font">99.9<span className="text-2xl text-tertiary-fixed-dim">%</span></span>
-                  </div>
-                  <p className="text-xs text-slate-300 leading-relaxed mb-6">Quantum-safe randomization active. All seed inputs are cryptographically isolated from the network.</p>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-[10px] font-bold uppercase">
-                      <span>Entropy Level</span>
-                      <span className="text-tertiary-fixed-dim">Maximum</span>
-                    </div>
-                    <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                      <div className="h-full bg-tertiary-fixed-dim w-[92%] shadow-[0_0_8px_rgba(104,219,169,0.5)]"></div>
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute -right-12 -bottom-12 opacity-10">
-                  <span className="material-symbols-outlined text-[160px]" style={{ fontVariationSettings: "'FILL' 1" }}>security</span>
-                </div>
-              </div>
-              {/* <!-- Live Feed / System Health --> */}
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-outline-variant/10">
-                <h4 className="headline-font text-lg font-bold text-primary mb-6 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse"></span>
-                  System Telemetry
-                </h4>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-4">
-                    <span className="material-symbols-outlined text-primary-container mt-1">dns</span>
-                    <div>
-                      <p className="text-xs font-bold text-primary uppercase">Mainframe Connectivity</p>
-                      <p className="text-xs text-on-surface-variant">Secure Tunnel Established (Node-4)</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <span className="material-symbols-outlined text-primary-container mt-1">key</span>
-                    <div>
-                      <p className="text-xs font-bold text-primary uppercase">Public Key Exchange</p>
-                      <p className="text-xs text-on-surface-variant">Rotation complete (Next in 2m 45s)</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <span className="material-symbols-outlined text-primary-container mt-1">analytics</span>
-                    <div>
-                      <p className="text-xs font-bold text-primary uppercase">Input Distribution</p>
-                      <p className="text-xs text-on-surface-variant">Uniform across 50 regional centers</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-8 pt-6 border-t border-outline-variant/15">
-                  <div className="p-4 bg-surface-container-low rounded-xl">
-                    <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Session ID</p>
-                    <code className="text-[10px] font-mono text-primary break-all">X99-SENTINEL-ALPH-01-PRIME-ALLOC-2024</code>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </div>
           </div>
-        </main>
-      </div>
-      {/* <!-- Security Status Bar --> */}
-      <footer className="ml-50 fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 px-8 py-2 flex items-center justify-between text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">
-        <div className="flex items-center gap-6">
-          <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim shadow-[0_0_4px_#68dba9]"></span> Encrypted Session Active</span>
-          <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim shadow-[0_0_4px_#68dba9]"></span> Live Audit Trail</span>
+
+          {/* Right Column: Security & Metrics */}
+          <div className="col-span-12 lg:col-span-4 space-y-8">
+            {/* Security Integrity Card */}
+            <div className="bg-[#0b1628] rounded-[40px] p-10 text-white shadow-2xl relative overflow-hidden group">
+              <div className="absolute bottom-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-10 -mb-10 blur-3xl group-hover:bg-emerald-500/20 transition-all duration-1000"></div>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-8">Security Integrity</h4>
+
+              <div className="relative mb-6">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[64px] font-black leading-none tracking-tighter">99.9</span>
+                  <span className="text-2xl font-black text-emerald-500">%</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-400 leading-relaxed font-bold mb-8">Quantum-safe randomization active. All seed inputs are cryptographically isolated from the network.</p>
+
+              <div className="p-6 bg-slate-900 border border-slate-800 rounded-3xl relative overflow-hidden">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Entropy Level</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Maximum</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 w-[94%] shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-pulse"></div>
+                </div>
+              </div>
+
+              <Shield className="absolute top-10 right-10 w-8 h-8 text-slate-800" />
+            </div>
+
+            {/* System Telemetry Card */}
+            <div className="bg-white rounded-[40px] p-10 border border-slate-100 shadow-sm">
+              <h4 className="text-lg font-black text-[#0b1628] tracking-tight mb-8 flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                System Telemetry
+              </h4>
+
+              <div className="space-y-8">
+                <div className="flex gap-4">
+                  <div className="p-3 bg-[#f8fafc] rounded-2xl border border-slate-50">
+                    <Server size={20} className="text-[#0b1628]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-[#0b1628] uppercase tracking-widest mb-1">Mainframe Connectivity</p>
+                    <p className="text-xs text-slate-400 font-bold">Secure Tunnel Established (Node-4)</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="p-3 bg-[#f8fafc] rounded-2xl border border-slate-50">
+                    <Key size={20} className="text-[#0b1628]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-[#0b1628] uppercase tracking-widest mb-1">Public Key Exchange</p>
+                    <p className="text-xs text-slate-400 font-bold">Rotation complete (Next in 2m 45s)</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="p-3 bg-[#f8fafc] rounded-2xl border border-slate-50">
+                    <BarChart3 size={20} className="text-[#0b1628]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-[#0b1628] uppercase tracking-widest mb-1">Input Distribution</p>
+                    <p className="text-xs text-slate-400 font-bold">Uniform across 50 regional centers</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-12 p-6 bg-[#f8fafc] rounded-3xl border border-slate-50">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Session ID</p>
+                <p className="text-[10px] font-black text-[#0b1628] font-mono break-all opacity-60">X99-SENTINEL-ALPH-01-PRIME-ALLOC-2024</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-4 text-on-surface-variant/70">
-            <span>Uptime: 142:22:11</span>
-            <div className="h-3 w-px bg-slate-300"></div>
-            <span>V 4.2.0-SENTINEL</span>
+      </main>
+
+      {/* Fixed Footer Bar */}
+      <footer className="ml-50fixed bottom-0 left-0 right-0 h-14 bg-white/80 backdrop-blur-md border-t border-slate-100 flex items-center justify-between px-10 z-50">
+        <div className="flex items-center gap-10">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Encrypted Session Active</span>
           </div>
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Live Audit Trail</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-6 text-[9px] font-black text-slate-300 uppercase tracking-widest">
+          <span>Uptime: 142:22:11</span>
+          <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
+          <span>V 4.2.0-SENTINEL</span>
         </div>
       </footer>
-
-
-    </div >
-  );
-}
-
-/* Components */
-
-function Iteration({
-  id,
-  time,
-  set,
-}: {
-  id: string;
-  time: string;
-  set: string;
-}) {
-  return (
-    <div className="flex items-center gap-6">
-      <div className="w-12 h-12 flex items-center justify-center bg-blue-900 text-white rounded-full">
-        {id}
-      </div>
-
-      <div className="flex-1 flex justify-between p-5 rounded-xl bg-gray-50 border">
-        <div>
-          <p className="text-xs font-bold uppercase text-blue-900">
-            Iteration Completed
-          </p>
-
-          <div className="flex gap-3 text-xs text-gray-500 mt-1">
-            <span className="flex items-center gap-1">
-              <Clock size={12} />
-              {time}
-            </span>
-
-            <span className="flex items-center gap-1">
-              <Fingerprint size={12} />
-              SHA-256 Verified
-            </span>
-          </div>
-        </div>
-
-        <div className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-lg font-bold">
-          {set}
-        </div>
-      </div>
     </div>
   );
-}
-
-function Pending({ id }: { id: string }) {
-  return (
-    <div className="flex items-center gap-6 opacity-40">
-      <div className="w-12 h-12 flex items-center justify-center bg-gray-200 rounded-full">
-        {id}
-      </div>
-
-      <div className="flex-1 p-5 border border-dashed rounded-xl">
-        <p className="text-xs uppercase">Pending Iteration</p>
-      </div>
-    </div>
-  );
-}
-
-function Item({
-  icon,
-  title,
-  desc,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div className="flex items-start gap-4">
-      {icon}
-      <div>
-        <p className="text-xs font-bold uppercase text-blue-900">
-          {title}
-        </p>
-        <p className="text-xs text-gray-500">{desc}</p>
-      </div>
-    </div>
-
-  );
-
-
 }

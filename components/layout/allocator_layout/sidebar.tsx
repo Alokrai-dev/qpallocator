@@ -1,3 +1,4 @@
+"use client"
 import React from 'react'
 import { LayoutGrid, Settings, LogOut, Menu, Bell, Search, User, LogIn, AlertTriangle, CheckSquare, Shield } from 'lucide-react'
 import Link from 'next/link'
@@ -17,13 +18,6 @@ export default function Sidebar() {
       {/* Navigation Menu */}
       <nav className="flex-1 overflow-y-auto py-6 px-4">
         <div className="space-y-2">
-          {/* Dashboard */}
-          <Link href="/randomization_in_progress" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-200 hover:bg-white/5 hover:text-white cursor-pointer transition group">
-            <LayoutGrid size={18} className="group-hover:scale-110 transition-transform" />
-            <span className="text-sm font-medium">Randomization</span>
-          </Link>
-
-
           {/* Selector Controls - Active */}
           <Link href="/selectorControl" className="flex items-center gap-3 px-4 py-3 rounded-lg bg-teal-600/90 text-white shadow-lg shadow-teal-900/40 cursor-pointer transition group">
             <Shield size={18} className="group-hover:scale-110 transition-transform" />
@@ -36,7 +30,7 @@ export default function Sidebar() {
       {/* Bottom Navigation */}
       <div className="border-t border-slate-700/50 p-4 space-y-2">
         {/* Logout */}
-        <button 
+        <button
           onClick={logout}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 cursor-pointer transition group border border-transparent hover:border-red-500/20"
         >
