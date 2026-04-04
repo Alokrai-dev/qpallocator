@@ -19,8 +19,10 @@ export async function randomize(req: AuthRequest, res: Response) {
   try {
     const { subjectId, shiftId } = req.body;
     const userId = req.user!.id;
+    const examId = req.user!.examId;
 
     const result = await randomizeAllocation({ subjectId: parseInt(subjectId), shiftId: parseInt(shiftId), userId });
+    
     res.json(result);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';

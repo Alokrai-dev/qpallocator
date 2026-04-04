@@ -3,22 +3,29 @@ import { iterations } from "../../db/schema/iteration";
 import { shiftSubjects } from "../../db/schema/shiftSubject";
 import { subjects } from "../../db/schema/subject";
 import { shifts } from "../../db/schema/shift";
+import { exams } from "../../db/schema/exam";
 import { eq, and, desc } from "drizzle-orm";
 
 export async function getExamAllocationData(examId: number) {
+  // Get exam details
+  const exam = await db.query.exams.findFirst({
+    where: eq(exams.id, examId),
+  });
+
   // Get all shifts for the exam
   const examShifts = await db.query.shifts.findMany({
     where: eq(shifts.examId, examId),
   });
 
-  // Get all subjects
-  const allSubjects = await db.query.subjects.findMany({
-    where: eq(subjects.isDeleted, false),
+  // Get all subjects for the exam
+  const examSubjects = await db.query.subjects.findMany({
+    where: and(eq(subjects.isDeleted, false), eq(subjects.examId, examId)),
   });
 
   return {
+    exam,
     shifts: examShifts,
-    subjects: allSubjects,
+    subjects: examSubjects,
   };
 }
 
