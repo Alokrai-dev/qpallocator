@@ -5,6 +5,8 @@ import { authenticate } from '../middlewares/auth.middleware';
 
 import { getExams } from '../controllers/exam/exam.controller';
 
+import { getExamData, randomize, getHistory } from '../controllers/allocation/allocation.controller';
+
 const router = Router();
 
 router.get('/health', healthCheck);
@@ -14,5 +16,10 @@ router.get('/profile', authenticate, profile);
 router.post('/logout', authenticate, logout);
 
 router.get('/exams', getExams);
+
+// Allocation Routes
+router.get('/allocations/data', authenticate, getExamData);
+router.post('/allocations/randomize', authenticate, randomize);
+router.get('/allocations/history', authenticate, getHistory);
 
 export default router;

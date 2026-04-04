@@ -8,6 +8,8 @@ export interface AuthRequest extends Request {
     id: number;
     username: string;
     type: string;
+    examId?: number;
+    examName?: string;
   };
 }
 
@@ -27,6 +29,8 @@ export function authenticate(
       id: number;
       username: string;
       type: string;
+      examId?: number;
+      examName?: string;
     };
     req.user = decoded;
     next();

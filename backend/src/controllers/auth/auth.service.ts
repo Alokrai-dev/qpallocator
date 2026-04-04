@@ -32,6 +32,8 @@ export async function registerUser(data: {
   return user;
 }
 
+import { exams } from '../../db/schema/exam';
+
 // 🔑 Login
 export async function loginUser(username: string, password: string, examName?: string) {
   const user = await db.query.users.findFirst({
@@ -48,18 +50,31 @@ export async function loginUser(username: string, password: string, examName?: s
     throw new Error('Invalid password');
   }
 
+  let examId: number | undefined;
+
   if (user.type === 'selector') {
     if (!examName) {
       throw new Error('An examination must be selected to continue');
     }
-    // We could validate examName against the exams table here as well
+    
+    // Validate and get examId
+    const exam = await db.query.exams.findFirst({
+      where: eq(exams.examName, examName),
+    });
+
+    if (!exam) {
+      throw new Error('The selected examination was not found or is no longer active');
+    }
+    examId = exam.id;
   }
 
   // create JWT
   const token = jwt.sign(
     {
       id: user.id,
+      username: user.username,
       type: user.type, // admin / selector
+      examId: examId,
       examName: user.type === 'selector' ? examName : undefined,
     },
     JWT_SECRET,
@@ -72,7 +87,23 @@ export async function loginUser(username: string, password: string, examName?: s
       id: user.id,
       username: user.username,
       type: user.type,
+      examId: examId,
       examName: user.type === 'selector' ? examName : undefined,
     },
   };
+}
+
+// 👤 Get User Profile
+export async function getUserById(id: number) {
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, id),
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  // Remove sensitive data (like password) before returning
+  const { password, ...userWithoutPassword } = user;
+  return userWithoutPassword;
 }

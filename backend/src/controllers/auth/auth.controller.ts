@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { registerUser, loginUser } from './auth.service';
+import { registerUser, loginUser, getUserById } from './auth.service';
 import { AuthRequest } from '../../middlewares/auth.middleware';
 
 // Register API
@@ -38,8 +38,15 @@ export async function profile(req: AuthRequest, res: Response) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    // Fetch fresh user data from DB
+    const user = await getUserById(req.user.id);
+
     res.json({
-      user: req.user,
+      user: {
+        ...user,
+        examId: req.user.examId,
+        examName: req.user.examName, // Include examName from token session
+      },
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
@@ -50,7 +57,8 @@ export async function profile(req: AuthRequest, res: Response) {
 // Logout API
 export async function logout(req: AuthRequest, res: Response) {
   try {
-    // For JWT, logout is handled client-side by discarding the token
+    // For JWT based auth, logout is primarily handled on the client side 
+    // by removing the token from storage.
     res.json({
       message: 'Logged out successfully',
     });
